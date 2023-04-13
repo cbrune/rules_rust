@@ -206,6 +206,11 @@ def _cargo_build_script_impl(ctx):
 
     links = ctx.attr.links or ""
 
+    if ctx.file.build_script_env_file:
+        env_input_path = ctx.file.build_script_env_file.path
+    else:
+        env_input_path = "NONE"
+
     # dep_env_file contains additional environment variables coming from
     # direct dependency sys-crates' build scripts. These need to be made
     # available to the current crate build script.
@@ -217,6 +222,7 @@ def _cargo_build_script_impl(ctx):
         links,
         out_dir.path,
         env_out.path,
+        env_input_path,
         flags_out.path,
         link_flags.path,
         link_search_paths.path,
@@ -232,6 +238,9 @@ def _cargo_build_script_impl(ctx):
             build_script_inputs.append(dep_env_file)
             for dep_build_info in dep[rust_common.dep_info].transitive_build_infos.to_list():
                 build_script_inputs.append(dep_build_info.out_dir)
+
+    if ctx.file.build_script_env_file:
+        build_script_inputs.append(ctx.file.build_script_env_file)
 
     ctx.actions.run(
         executable = ctx.executable._cargo_build_script_runner,
@@ -268,6 +277,17 @@ cargo_build_script = rule(
     attrs = {
         "build_script_env": attr.string_dict(
             doc = "Environment variables for build scripts.",
+        ),
+        "build_script_env_file": attr.label(
+            doc = """
+            Environment variables for build scripts contained in a file.
+
+            The variable name and value are defined on a single line as NAME=VALUE.
+
+            If the VALUE contained embedded newlines, they are encoded
+            as '%%%'.
+            """,
+            allow_single_file = True,
         ),
         "crate_features": attr.string_list(
             doc = "The list of rust features that the build script should consider activated.",
