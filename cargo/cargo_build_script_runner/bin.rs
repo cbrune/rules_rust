@@ -39,6 +39,7 @@ fn run_buildrs() -> Result<(), String> {
         crate_links,
         out_dir,
         env_file,
+        env_input_file,
         compile_flags_file,
         link_flags_file,
         link_search_paths_file,
@@ -64,6 +65,30 @@ fn run_buildrs() -> Result<(), String> {
         .env("CARGO_MANIFEST_DIR", manifest_dir)
         .env("RUSTC", rustc)
         .env("RUST_BACKTRACE", "full");
+
+    // Read input environment file
+    if env_input_file != "NONE" {
+        if let Ok(contents) = read_to_string(env_input_file) {
+            for line in contents.split('\n') {
+                if line.is_empty() {
+                    continue;
+                }
+                match line.split_once('=') {
+                    Some((key, value)) => {
+                        // embedded newlines are encoded as '%%%'.
+                        command.env(key, value.replace("%%%", "\n"));
+                    }
+                    _ => {
+                        return Err(
+                            "error: Wrong environment file format, should not happen".to_owned()
+                        )
+                    }
+                }
+            }
+        } else {
+            return Err("error: input environment file unreadable".to_owned());
+        }
+    }
 
     for dep_env_path in input_dep_env_paths.iter() {
         if let Ok(contents) = read_to_string(dep_env_path) {
@@ -180,6 +205,7 @@ struct Options {
     crate_links: String,
     out_dir: String,
     env_file: String,
+    env_input_file: String,
     compile_flags_file: String,
     link_flags_file: String,
     link_search_paths_file: String,
@@ -194,12 +220,13 @@ fn parse_args() -> Result<Options, String> {
     let mut args = env::args().skip(1);
 
     // TODO: we should consider an alternative to positional arguments.
-    match (args.next(), args.next(), args.next(), args.next(), args.next(), args.next(), args.next(), args.next(), args.next(), args.next()) {
+    match (args.next(), args.next(), args.next(), args.next(), args.next(), args.next(), args.next(), args.next(), args.next(), args.next(), args.next()) {
         (
             Some(progname),
             Some(crate_links),
             Some(out_dir),
             Some(env_file),
+            Some(env_input_file),
             Some(compile_flags_file),
             Some(link_flags_file),
             Some(link_search_paths_file),
@@ -212,6 +239,7 @@ fn parse_args() -> Result<Options, String> {
                 crate_links,
                 out_dir,
                 env_file,
+                env_input_file,
                 compile_flags_file,
                 link_flags_file,
                 link_search_paths_file,
@@ -222,7 +250,7 @@ fn parse_args() -> Result<Options, String> {
             })
         }
         _ => {
-            Err(format!("Usage: $0 progname crate_links out_dir env_file compile_flags_file link_flags_file link_search_paths_file output_dep_env_path stdout_path stderr_path input_dep_env_paths[arg1...argn]\nArguments passed: {:?}", args.collect::<Vec<String>>()))
+            Err(format!("Usage: $0 progname crate_links out_dir env_file env_input_file compile_flags_file link_flags_file link_search_paths_file output_dep_env_path stdout_path stderr_path input_dep_env_paths[arg1...argn]\nArguments passed: {:?}", args.collect::<Vec<String>>()))
         }
     }
 }

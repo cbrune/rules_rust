@@ -8,6 +8,12 @@ load(
 )
 load("//rust:defs.bzl", "rust_binary")
 
+# List of kwargs that only apply to running the build script
+build_script_only_kwargs = [
+    "compatible_with",
+    "build_script_env_file",
+]
+
 def cargo_build_script(
         name,
         crate_features = [],
@@ -115,9 +121,11 @@ def cargo_build_script(
         binary_tags.append("manual")
     build_script_kwargs = {}
     binary_kwargs = kwargs
-    if "compatible_with" in kwargs:
-        build_script_kwargs["compatible_with"] = kwargs["compatible_with"]
-        binary_kwargs.pop("compatible_with")
+
+    for k in build_script_only_kwargs:
+        if k in kwargs:
+            build_script_kwargs[k] = kwargs[k]
+            binary_kwargs.pop(k)
 
     if "toolchains" in kwargs:
         build_script_kwargs["toolchains"] = kwargs["toolchains"]
