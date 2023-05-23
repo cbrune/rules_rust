@@ -983,6 +983,10 @@ _rust_binary_attrs = dict({
         ),
         default = False,
     ),
+    "use_rustc_linker": attr.bool(
+        doc = ("Use Rust's built-in linker instead of the linker from cc_toolchain"),
+        default= False,
+    ),
     "stamp": _stamp_attribute(default_value = -1),
     "_grep_includes": attr.label(
         allow_single_file = True,
