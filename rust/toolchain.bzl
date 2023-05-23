@@ -316,6 +316,7 @@ def _generate_sysroot(
         rustc,
         rustdoc,
         rustc_lib,
+        lld,
         cargo = None,
         clippy = None,
         llvm_tools = None,
@@ -328,6 +329,7 @@ def _generate_sysroot(
         rustc (File): The path to a `rustc` executable.
         rustdoc (File): The path to a `rustdoc` executable.
         rustc_lib (Target): A collection of Files containing dependencies of `rustc`.
+        lld (File): The path to a `rustc` linker executable.
         cargo (File, optional): The path to a `cargo` executable.
         clippy (File, optional): The path to a `clippy-driver` executable.
         llvm_tools (Target, optional): A collection of llvm tools used by `rustc`.
@@ -346,6 +348,10 @@ def _generate_sysroot(
     # Rustc
     sysroot_rustc = _symlink_sysroot_bin(ctx, name, "bin", rustc)
     direct_files.extend([sysroot_rustc])
+
+    # Rust lld
+    sysroot_lld =  _symlink_sysroot_bin(ctx, name, "bin", lld)
+    direct_files.extend([sysroot_lld])
 
     # Rustc dependencies
     sysroot_rustc_lib = None
@@ -394,6 +400,7 @@ def _generate_sysroot(
         content = "\n".join([
             "cargo: {}".format(cargo),
             "clippy: {}".format(clippy),
+            "lld: {}".format(lld),
             "llvm_tools: {}".format(llvm_tools),
             "rust_std: {}".format(rust_std),
             "rustc_lib: {}".format(rustc_lib),
@@ -410,6 +417,7 @@ def _generate_sysroot(
         all_files = all_files,
         cargo = sysroot_cargo,
         clippy = sysroot_clippy,
+        lld = sysroot_lld,
         rust_std = sysroot_rust_std,
         rustc = sysroot_rustc,
         rustc_lib = sysroot_rustc_lib,
@@ -461,6 +469,7 @@ def _rust_toolchain_impl(ctx):
         rustc = ctx.file.rustc,
         rustdoc = ctx.file.rust_doc,
         rustc_lib = ctx.attr.rustc_lib,
+        lld = ctx.file.lld,
         rust_std = rust_std,
         rustfmt = ctx.file.rustfmt,
         clippy = ctx.file.clippy_driver,
@@ -504,6 +513,7 @@ def _rust_toolchain_impl(ctx):
     # Variables for make variable expansion
     make_variables = {
         "RUSTC": sysroot.rustc.path,
+        "RUSTC_LLD": sysroot.lld.path,
         "RUSTDOC": sysroot.rustdoc.path,
         "RUST_DEFAULT_EDITION": ctx.attr.default_edition or "",
         "RUST_SYSROOT": sysroot_path,
@@ -575,6 +585,7 @@ def _rust_toolchain_impl(ctx):
         exec_triple = exec_triple,
         libstd_and_allocator_ccinfo = _make_libstd_and_allocator_ccinfo(ctx, rust_std, ctx.attr.allocator_library),
         libstd_and_global_allocator_ccinfo = _make_libstd_and_allocator_ccinfo(ctx, rust_std, ctx.attr.global_allocator_library),
+        lld = sysroot.lld,
         llvm_cov = ctx.file.llvm_cov,
         llvm_profdata = ctx.file.llvm_profdata,
         make_variables = make_variable_info,
@@ -670,6 +681,12 @@ rust_toolchain = rule(
         ),
         "global_allocator_library": attr.label(
             doc = "Target that provides allocator functions for when a global allocator is present.",
+        ),
+        "lld": attr.label(
+            doc = "The location of the `rustc` linker. Can be a direct source or a filegroup containing one item.",
+            allow_single_file = True,
+            cfg = "exec",
+            mandatory = True,
         ),
         "llvm_cov": attr.label(
             doc = "The location of the `llvm-cov` binary. Can be a direct source or a filegroup containing one item. If None, rust code is not instrumented for coverage.",

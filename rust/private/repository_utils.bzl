@@ -32,6 +32,12 @@ filegroup(
 )
 
 filegroup(
+    name = "lld",
+    srcs = ["lib/rustlib/{target_triple}/bin/gcc-ld/ld.lld{binary_ext}"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
     name = "rustc_lib",
     srcs = glob(
         [
@@ -235,6 +241,7 @@ rust_toolchain(
     rust_doc = "//:rustdoc",
     rust_std = "//:rust_std-{target_triple}",
     rustc = "//:rustc",
+    lld = "//:lld",
     rustfmt = {rustfmt_label},
     cargo = "//:cargo",
     clippy_driver = "//:clippy_driver_bin",
