@@ -943,7 +943,11 @@ def construct_arguments(
         # Rust's built-in linker can handle linking wasm files. We don't want to attempt to use the cc
         # linker since it won't understand.
         compilation_mode = ctx.var["COMPILATION_MODE"]
-        if toolchain.target_arch != "wasm32":
+        # Allow the user to specify using Rust's built-in linker
+        # instead of what comes from the toolchain.
+        use_rustc_linker = getattr(attr, "use_rustc_linker", False)
+        use_toolchain_linker = toolchain.target_arch != "wasm32" and not use_rustc_linker
+        if use_toolchain_linker:
             if output_dir:
                 use_pic = _should_use_pic(cc_toolchain, feature_configuration, crate_info.type, compilation_mode)
                 rpaths = _compute_rpaths(toolchain, output_dir, dep_info, use_pic)
