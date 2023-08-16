@@ -12,6 +12,7 @@ const SYSROOT_SRC_FILE_RUNFILES_PREFIX: &str = "rules_rust";
 
 pub fn generate_crate_info(
     bazel: impl AsRef<Path>,
+    platforms: impl AsRef<str>,
     workspace: impl AsRef<Path>,
     rules_rust: impl AsRef<str>,
     targets: &[String],
@@ -21,6 +22,7 @@ pub fn generate_crate_info(
     let output = Command::new(bazel.as_ref())
         .current_dir(workspace.as_ref())
         .arg("build")
+        .arg(format!("--platforms={}", platforms.as_ref()))
         .arg(format!(
             "--aspects={}//rust:defs.bzl%rust_analyzer_aspect",
             rules_rust.as_ref()
@@ -42,6 +44,7 @@ pub fn generate_crate_info(
 
 pub fn write_rust_project(
     bazel: impl AsRef<Path>,
+    platforms: impl AsRef<str>,
     workspace: impl AsRef<Path>,
     rules_rust_name: &impl AsRef<str>,
     targets: &[String],
@@ -51,6 +54,7 @@ pub fn write_rust_project(
 ) -> anyhow::Result<()> {
     let crate_specs = aquery::get_crate_specs(
         bazel.as_ref(),
+        platforms.as_ref(),
         workspace.as_ref(),
         execution_root.as_ref(),
         targets,

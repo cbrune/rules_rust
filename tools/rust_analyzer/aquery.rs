@@ -63,6 +63,7 @@ pub struct CrateSpecSource {
 
 pub fn get_crate_specs(
     bazel: &Path,
+    platforms: &str,
     workspace: &Path,
     execution_root: &Path,
     targets: &[String],
@@ -78,6 +79,7 @@ pub fn get_crate_specs(
     let aquery_output = Command::new(bazel)
         .current_dir(workspace)
         .arg("aquery")
+        .arg(format!("--platforms={}", platforms))
         .arg("--include_aspects")
         .arg(format!(
             "--aspects={rules_rust_name}//rust:defs.bzl%rust_analyzer_aspect"

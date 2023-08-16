@@ -36,6 +36,7 @@ fn main() -> anyhow::Result<()> {
     // Generate the crate specs.
     generate_crate_info(
         &config.bazel,
+        &config.platforms,
         workspace_root,
         rules_rust_name,
         &config.targets,
@@ -44,6 +45,7 @@ fn main() -> anyhow::Result<()> {
     // Use the generated files to write rust-project.json.
     write_rust_project(
         &config.bazel,
+        &config.platforms,
         workspace_root,
         &rules_rust_name,
         &config.targets,
@@ -123,4 +125,8 @@ struct Config {
     /// Space separated list of target patterns that comes after all other args.
     #[clap(default_value = "@//...")]
     targets: Vec<String>,
+
+    /// The bazel platforms to use while querying dependencies
+    #[clap(long, default_value = "@bazel_tools//platforms:target_platform")]
+    platforms: String,
 }
